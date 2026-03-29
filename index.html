@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Conexão Cúbica - Start</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px;
+            background: #1a1a2e; color: white; height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.1rem; margin: 5px 0 10px 0; color: #f1c40f; text-transform: uppercase; }
+
+        /* Gabarito */
+        .card { 
+            background: white; border-radius: 12px; padding: 8px; width: 150px;
+            color: #333; border: 4px solid #f1c40f; margin-bottom: 12px; z-index: 10;
+        }
+        .equation { 
+            font-size: 1.2rem; font-weight: bold; margin: 4px 0; padding: 8px; 
+            border-radius: 6px; background: #f8f9fa; border: 1px solid #ddd; text-align: center;
+            transition: background 0.3s;
+        }
+        
+        /* Cubos Horizontais */
+        .cubes-container { 
+            display: flex; flex-direction: row; justify-content: center; 
+            gap: 12px; perspective: 800px; margin-bottom: 15px; z-index: 10;
+        }
+        .scene { width: 70px; height: 70px; }
+        .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.4s ease-out; }
+        .face { 
+            position: absolute; width: 70px; height: 70px; border: 2px solid #222; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 1.4rem; color: white; font-weight: bold; backface-visibility: hidden; border-radius: 5px;
+        }
+
+        /* Configuração das Faces */
+        .f1 { background: #e74c3c; transform: rotateY(0deg) translateZ(35px); }
+        .f2 { background: #3498db; transform: rotateY(180deg) translateZ(35px); }
+        .f3 { background: #2ecc71; transform: rotateY(90deg) translateZ(35px); }
+        .f4 { background: #f1c40f; transform: rotateY(-90deg) translateZ(35px); }
+        .f5 { background: #9b59b6; transform: rotateX(90deg) translateZ(35px); }
+        .f6 { background: #e67e22; transform: rotateX(-90deg) translateZ(35px); }
+
+        .show-12 { transform: rotateY(0deg); }
+        .show-18 { transform: rotateY(-180deg); }
+        .show-24 { transform: rotateY(-90deg); }
+        .show-30 { transform: rotateY(90deg); }
+        .show-36 { transform: rotateX(-90deg); }
+        .show-48 { transform: rotateX(90deg); }
+
+        /* Controles */
+        .controls { display: flex; gap: 8px; width: 100%; max-width: 300px; z-index: 10; margin-bottom: 15px; }
+        button { 
+            padding: 12px; font-size: 0.85rem; font-weight: bold; 
+            border-radius: 8px; border: none; cursor: pointer; flex: 1;
+            text-transform: uppercase;
+        }
+        .btn-check { background: #f1c40f; color: #1a1a2e; }
+        .btn-new { background: #27ae60; color: white; }
+        .btn-start { background: #f1c40f; color: #1a1a2e; width: 100%; max-width: 200px; font-size: 1.1rem; }
+
+        /* Status */
+        .stats { display: flex; gap: 20px; font-family: monospace; font-size: 1rem; color: #bdc3c7; z-index: 10; }
+        .stat-val { color: #f1c40f; font-weight: bold; }
+
+        #confetti-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <h1>Conexão Cúbica</h1>
+
+    <div class="card">
+        <div id="eq-top" class="equation">?</div>
+        <div id="eq-mid" class="equation">?</div>
+        <div id="eq-bot" class="equation">?</div>
+    </div>
+
+    <div class="cubes-container">
+        <div class="scene" onclick="rotateCube(3)"><div id="cube3" class="cube show-12"><div class="face f1">12</div><div class="face f2">18</div><div class="face f3">24</div><div class="face f4">30</div><div class="face f5">36</div><div class="face f6">48</div></div></div>
+        <div class="scene" onclick="rotateCube(2)"><div id="cube2" class="cube show-12"><div class="face f1">12</div><div class="face f2">18</div><div class="face f3">24</div><div class="face f4">30</div><div class="face f5">36</div><div class="face f6">48</div></div></div>
+        <div class="scene" onclick="rotateCube(1)"><div id="cube1" class="cube show-12"><div class="face f1">12</div><div class="face f2">18</div><div class="face f3">24</div><div class="face f4">30</div><div class="face f5">36</div><div class="face f6">48</div></div></div>
+    </div>
+
+    <!-- Botão de Início (Aparece primeiro) -->
+    <div id="start-area" class="controls">
+        <button class="btn-start" onclick="startGame()">COMEÇAR!</button>
+    </div>
+
+    <!-- Botões de Jogo (Escondidos no início) -->
+    <div id="game-controls" class="controls hidden">
+        <button class="btn-new" onclick="resetGame()">Nova Fase</button>
+        <button class="btn-check" onclick="checkWin()">Conferir</button>
+    </div>
+
+    <div class="stats">
+        <div>Tempo: <span id="timer" class="stat-val">0.00</span>s</div>
+        <div>Recorde: <span id="best" class="stat-val">--</span>s</div>
+    </div>
+
+    <script>
+        const faces = [12, 18, 24, 30, 36, 48];
+        let targetResults = { top: 0, mid: 0, bot: 0 };
+        let currentValues = { 3: 12, 2: 12, 1: 12 };
+        
+        let timerInterval;
+        let startTime;
+        let isRunning = false;
+        let bestTime = localStorage.getItem('bestTimeCC') || Infinity;
+
+        if(bestTime !== Infinity) document.getElementById('best').innerText = bestTime;
+
+        function startGame() {
+            document.getElementById('start-area').classList.add('hidden');
+            document.getElementById('game-controls').classList.remove('hidden');
+            newGame();
+        }
+
+        function resetGame() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            document.getElementById('timer').innerText = "0.00";
+            newGame();
+        }
+
+        function newGame() {
+            const ids = ['top', 'mid', 'bot'];
+            ids.forEach(id => {
+                let res = faces[Math.floor(Math.random() * faces.length)];
+                targetResults[id] = res;
+                let op = Math.floor(Math.random() * 4);
+                let text = "";
+                if(op === 0) text = `${res - 6} + 6`;
+                else if(op === 1) text = `${res + 12} - 12`;
+                else if(op === 2) text = `${res / 2} x 2`;
+                else text = `${res * 2} ÷ 2`;
+                let el = document.getElementById(`eq-${id}`);
+                el.innerText = text;
+                el.style.background = "#f8f9fa";
+            });
+            startTimer();
+        }
+
+        function startTimer() {
+            startTime = Date.now();
+            isRunning = true;
+            timerInterval = setInterval(() => {
+                let delta = (Date.now() - startTime) / 1000;
+                document.getElementById('timer').innerText = delta.toFixed(2);
+            }, 50);
+        }
+
+        function rotateCube(id) {
+            let idx = (faces.indexOf(currentValues[id]) + 1) % 6;
+            currentValues[id] = faces[idx];
+            document.getElementById(`cube${id}`).className = `cube show-${currentValues[id]}`;
+        }
+
+        function checkWin() {
+            const matches = [{ eq: 'top', cube: 3 }, { eq: 'mid', cube: 2 }, { eq: 'bot', cube: 1 }];
+            let wins = 0;
+            matches.forEach(m => {
+                let el = document.getElementById(`eq-${m.eq}`);
+                if(currentValues[m.cube] === targetResults[m.eq]) {
+                    el.style.background = "#2ecc71";
+                    wins++;
+                } else {
+                    el.style.background = "#ff7675";
+                }
+            });
+
+            if(wins === 3 && isRunning) {
+                isRunning = false;
+                clearInterval(timerInterval);
+                let finalTime = parseFloat(document.getElementById('timer').innerText);
+                
+                if(finalTime < bestTime) {
+                    bestTime = finalTime;
+                    localStorage.setItem('bestTimeCC', bestTime);
+                    document.getElementById('best').innerText = bestTime;
+                }
+                startConfetti();
+            }
+        }
+
+        // Confetes
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function startConfetti() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            for(let i=0; i<100; i++) {
+                particles.push({
+                    x: canvas.width/2, y: canvas.height/2,
+                    size: Math.random() * 8 + 4,
+                    color: `hsl(${Math.random() * 360}, 70%, 50%)`,
+                    velX: (Math.random() - 0.5) * 15,
+                    velY: (Math.random() - 0.5) * 15 - 5,
+                    gravity: 0.2
+                });
+            }
+            animate();
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, i) => {
+                p.velY += p.gravity; p.x += p.velX; p.y += p.velY;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                if(p.y > canvas.height) particles.splice(i, 1);
+            });
+            if(particles.length > 0) requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+</html>
